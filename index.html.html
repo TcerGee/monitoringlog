@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekod Pemantauan Kokurikulum SMSFX</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Hijau Lembut Web Background */
+            overflow: hidden;
+        }
+
+        /* --- A4 PREVIEW CONTAINER --- */
+        #print-area {
+            width: 210mm;
+            margin: 0 auto;
+        }
+
+        .a4-page {
+            width: 210mm;
+            height: 296mm; /* A4 Height */
+            background-color: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden; /* Prevent spill */
+            margin-bottom: 20px;
+            color: #000;
+        }
+
+        /* --- BACKGROUND ART (PENCIL STYLE) --- */
+        .bg-base-layer {
+            position: absolute;
+            inset: 0;
+            /* Hijau Lembut Gradient */
+            background: linear-gradient(135deg, #dcfce7 0%, #ffffff 50%, #d1fae5 100%);
+            z-index: 0;
+        }
+        
+        /* Corak SVG Abstrak Sukan */
+        .pencil-overlay {
+            position: absolute;
+            inset: 0;
+            opacity: 0.08;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10 L30 30 M30 10 L10 30' stroke='%23000' stroke-width='1'/%3E%3Ccircle cx='80' cy='20' r='10' stroke='%23000' fill='none'/%3E%3Cpath d='M20 80 Q50 60 80 80' stroke='%23000' fill='none'/%3E%3Crect x='40' y='40' width='20' height='20' stroke='%23000' fill='none'/%3E%3C/svg%3E");
+            z-index: 1;
+        }
+
+        /* --- CONTENT LAYER --- */
+        .content-layer {
+            position: relative;
+            z-index: 10;
+            padding: 15mm;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- TABLE STYLING --- */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Roboto', sans-serif;
+            font-size: 10pt;
+            background: rgba(255,255,255,0.9); /* Sedikit transparent */
+            margin-bottom: 10px;
+        }
+        .report-table td, .report-table th {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            vertical-align: middle;
+            line-height: 1.3;
+        }
+        
+        /* Warna Header Jadual: Hijau Gelap, Tulisan Putih */
+        .th-green {
+            background-color: #14532d; /* Green-900 */
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        /* Warna Label Column: Hijau/Kelabu Cair */
+        .td-label {
+            background-color: #dcfce7; /* Green-100 */
+            font-weight: 600;
+            width: 30%;
+        }
+
+        /* Section Header Row */
+        .section-header {
+            background-color: #15803d; /* Green-700 */
+            color: white;
+            font-weight: bold;
+            padding: 5px;
+            margin-top: 10px;
+            margin-bottom: 0;
+            font-size: 10pt;
+            border: 1px solid #000;
+            border-bottom: none;
+            text-transform: uppercase;
+        }
+
+        /* Checkbox Visual */
+        .chk-box {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            margin-right: 5px;
+            text-align: center;
+            line-height: 12px;
+            font-size: 12px;
+            background: white;
+            color: black;
+            font-weight: bold;
+        }
+
+        /* --- HEADER SPECIFICS --- */
+        .main-header-bg {
+            background-color: #1e3a8a; /* Biru Gelap */
+            color: #facc15; /* Kuning Terang */
+            padding: 10px;
+            border: 2px solid #000;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        /* --- IMAGE GRID --- */
+        .img-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .img-box {
+            height: 180px;
+            border: 2px solid #000;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- INPUTS --- */
+        .form-label { font-size: 0.85rem; font-weight: 700; color: #14532d; display: block; margin-bottom: 2px; }
+        .form-input { width: 100%; border: 1px solid #cbd5e1; padding: 6px; font-size: 0.9rem; rounded: 4px; margin-bottom: 8px; background:white; }
+        .form-select { width: 100%; border: 1px solid #cbd5e1; padding: 6px; font-size: 0.9rem; rounded: 4px; margin-bottom: 8px; background:white; }
+        
+        optgroup { font-weight: bold; color: #1e3a8a; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- NAVBAR -->
+    <nav class="bg-green-900 text-white p-3 shadow-lg flex-none z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-shield text-yellow-400 text-xl"></i>
+                <h1 class="font-bold text-lg tracking-wide">SISTEM PEMANTAUAN SMSFX</h1>
+            </div>
+            <button onclick="generatePDF()" id="btnGenerate" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold py-2 px-6 rounded shadow transform hover:scale-105 transition flex items-center gap-2">
+                <i class="fa-solid fa-print"></i> JANA PDF
+            </button>
+        </div>
+    </nav>
+
+    <!-- CONTENT AREA -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- LEFT: INPUT FORM -->
+        <div class="w-full md:w-1/3 bg-white border-r border-green-800 p-6 overflow-y-auto pb-20 shadow-xl z-20">
+            <form id="monitorForm" onsubmit="return false;">
+                
+                <div class="mb-6 border-b border-green-200 pb-4">
+                    <label class="form-label text-lg">Tahun Laporan</label>
+                    <input type="number" id="in_tahun" value="2026" class="form-input text-center font-bold text-lg border-green-500" oninput="updateText('out_tahun', this.value)">
+                </div>
+
+                <!-- Info Asas -->
+                <div class="mb-6 bg-green-50 p-4 rounded border border-green-200">
+                    <h3 class="font-bold text-green-900 mb-3 border-b border-green-300 pb-1"><i class="fa-solid fa-info-circle"></i> MAKLUMAT ASAS</h3>
+                    
+                    <label class="form-label">Tarikh</label>
+                    <input type="date" id="in_tarikh" class="form-input" oninput="updateDate(this.value)">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="form-label">Masa Mula</label>
+                            <input type="time" id="in_masa_mula" class="form-input" oninput="updateTime()">
+                        </div>
+                        <div>
+                            <label class="form-label">Masa Tamat</label>
+                            <input type="time" id="in_masa_tamat" class="form-input" oninput="updateTime()">
+                        </div>
+                    </div>
+
+                    <label class="form-label">Tempat</label>
+                    <input type="text" class="form-input" id="in_tempat" oninput="updateText('out_tempat', this.value)">
+
+                    <label class="form-label">Nama Unit (Sila Pilih)</label>
+                    <select id="in_unit" class="form-select" onchange="updateText('out_unit', this.value)">
+                        <option value="">- Pilih Unit -</option>
+                        <optgroup label="UNIT BERUNIFORM (UNI)">
+                            <option value="Pengakap">Pengakap</option>
+                            <option value="BSMM">BSMM</option>
+                            <option value="Kadet Bomba & Penyelamat">Kadet Bomba & Penyelamat</option>
+                            <option value="Kadet Remaja Sekolah">Kadet Remaja Sekolah</option>
+                            <option value="Kadet Polis">Kadet Polis</option>
+                        </optgroup>
+                        <optgroup label="KELAB & PERSATUAN (UPKAS)">
+                            <option value="Persatuan Bahasa Melayu">Persatuan Bahasa Melayu</option>
+                            <option value="Persatuan Bahasa Inggeris">Persatuan Bahasa Inggeris</option>
+                            <option value="Persatuan SainsMaths & Inovasi STEM">Persatuan SainsMaths & Inovasi STEM</option>
+                            <option value="Kelab Keusahawanan">Kelab Keusahawanan</option>
+                            <option value="Kelab Seni Muzik">Kelab Seni Muzik</option>
+                            <option value="Kelab Seni Tari">Kelab Seni Tari</option>
+                            <option value="Kelab Pencinta Alam">Kelab Pencinta Alam</option>
+                            <option value="Kelab Kerjaya">Kelab Kerjaya</option>
+                            <option value="Kelab Rukunegara">Kelab Rukunegara</option>
+                            <option value="Kelab Komputer">Kelab Komputer</option>
+                            <option value="Kelab LEO">Kelab LEO</option>
+                            <option value="Persatuan Agama Islam">Persatuan Agama Islam</option>
+                            <option value="Kelab Christian Fellowship">Kelab Christian Fellowship</option>
+                            <option value="Kelab NILAM & TVPSS">Kelab NILAM & TVPSS</option>
+                        </optgroup>
+                        <optgroup label="SUKAN & PERMAINAN (USP)">
+                            <option value="Kelab Olahraga">Kelab Olahraga</option>
+                            <option value="Kelab Badminton">Kelab Badminton</option>
+                            <option value="Kelab Bola Jaring">Kelab Bola Jaring</option>
+                            <option value="Kelab Bola Baling">Kelab Bola Baling</option>
+                            <option value="Kelab Permainan Dalaman Catur">Kelab Permainan Dalaman Catur</option>
+                            <option value="Kelab Bola Sepak">Kelab Bola Sepak</option>
+                            <option value="Kelab Bola Tampar">Kelab Bola Tampar</option>
+                            <option value="Kelab Bola Keranjang">Kelab Bola Keranjang</option>
+                            <option value="Kelab Ragbi">Kelab Ragbi</option>
+                            <option value="Kelab Taekwondo">Kelab Taekwondo</option>
+                        </optgroup>
+                    </select>
+
+                    <label class="form-label">Nama KGP (Guru Penasihat)</label>
+                    <select id="in_kgp" class="form-select" onchange="updateText('out_kgp', this.value)">
+                        <option value="">- Pilih Nama KGP -</option>
+                        <option value="BETTY LEONG">BETTY LEONG</option>
+                        <option value="TEY SIEW TEE">TEY SIEW TEE</option>
+                        <option value="JEE ROSLAILY D.AWANG">JEE ROSLAILY D.AWANG</option>
+                        <option value="ANGELA ANN DAVID">ANGELA ANN DAVID</option>
+                        <option value="LETTY TEO">LETTY TEO</option>
+                        <option value="AG.AHMAD B. ABD.RAHMAN">AG.AHMAD B. ABD.RAHMAN</option>
+                        <option value="AHMAD AMIN BIN ROMLI">AHMAD AMIN BIN ROMLI</option>
+                        <option value="ALEXANDRIA DONY">ALEXANDRIA DONY</option>
+                        <option value="ANDREY ASANG">ANDREY ASANG</option>
+                        <option value="ARINA BINTI SAINAL">ARINA BINTI SAINAL</option>
+                        <option value="BEATRICE ABLE PADTONG">BEATRICE ABLE PADTONG</option>
+                        <option value="CAROL LENNY DONGGULU">CAROL LENNY DONGGULU</option>
+                        <option value="CORNELIA BINTI YURIMOS">CORNELIA BINTI YURIMOS</option>
+                        <option value="DAHLIYA BINTI MURI">DAHLIYA BINTI MURI</option>
+                        <option value="DAPHNIE EFFY FLORENTIUS">DAPHNIE EFFY FLORENTIUS</option>
+                        <option value="DIONYSIA BINTI RUSANI">DIONYSIA BINTI RUSANI</option>
+                        <option value="DORA PONGOD">DORA PONGOD</option>
+                        <option value="HANAFI BIN MOHD ADNAN">HANAFI BIN MOHD ADNAN</option>
+                        <option value="HANISAH BINTI HASSAN">HANISAH BINTI HASSAN</option>
+                        <option value="HANRRY BIN JOSEPH">HANRRY BIN JOSEPH</option>
+                        <option value="JAMIL BIN ANGKAUS">JAMIL BIN ANGKAUS</option>
+                        <option value="JANET LEONG">JANET LEONG</option>
+                        <option value="JOVINIA MODILIH">JOVINIA MODILIH</option>
+                        <option value="KAREN DOROTHY HO">KAREN DOROTHY HO</option>
+                        <option value="LAURASIA JOSEPH">LAURASIA JOSEPH</option>
+                        <option value="LILLY BINTI JOSEPH">LILLY BINTI JOSEPH</option>
+                        <option value="LYDIA BINTI TUMIN">LYDIA BINTI TUMIN</option>
+                        <option value="MILVIN LEONG">MILVIN LEONG</option>
+                        <option value="MOHD ARIFF BIN MOHD MUSTAZA">MOHD ARIFF BIN MOHD MUSTAZA</option>
+                        <option value="MOHD.HARBUDI BIN SAHARIN">MOHD.HARBUDI BIN SAHARIN</option>
+                        <option value="MOHD. ZAKRI BIN MOKHTAR">MOHD. ZAKRI BIN MOKHTAR</option>
+                        <option value="MUHAMMAD SOFWAN BIN SULAIMAN">MUHAMMAD SOFWAN BIN SULAIMAN</option>
+                        <option value="MUTAHAR BIN LEHANDO">MUTAHAR BIN LEHANDO</option>
+                        <option value="NABILAH BINTI DARUS">NABILAH BINTI DARUS</option>
+                        <option value="NOOR AZIZAH BINTI MOHD NOH">NOOR AZIZAH BINTI MOHD NOH</option>
+                        <option value="NUH BIN ABDUL KADIR">NUH BIN ABDUL KADIR</option>
+                        <option value="NURHIDAYA BINTI GANI">NURHIDAYA BINTI GANI</option>
+                        <option value="NURJILAH BINTI TIALUS">NURJILAH BINTI TIALUS</option>
+                        <option value="NURUL FATIHA BINTI ROMALI">NURUL FATIHA BINTI ROMALI</option>
+                        <option value="RAMLAH BINTI MD ADNAN">RAMLAH BINTI MD ADNAN</option>
+                        <option value="RICKY BIN FRANCIS">RICKY BIN FRANCIS</option>
+                        <option value="RITA GARA">RITA GARA</option>
+                        <option value="ROSMINAH BINTI RANTIAN">ROSMINAH BINTI RANTIAN</option>
+                        <option value="ROY NORMAN BIN I NIIP">ROY NORMAN BIN I NIIP</option>
+                        <option value="SALIZAH BINTI LUSLY">SALIZAH BINTI LUSLY</option>
+                        <option value="SARNI LAEMBA">SARNI LAEMBA</option>
+                        <option value="SITI HALIMAH BINTI BASRI">SITI HALIMAH BINTI BASRI</option>
+                        <option value="SITI HUSNIYAH BINTI SAJIMIN">SITI HUSNIYAH BINTI SAJIMIN</option>
+                        <option value="SITI RASMAH BINTI ABD LATIP">SITI RASMAH BINTI ABD LATIP</option>
+                        <option value="STELLA NILUS">STELLA NILUS</option>
+                        <option value="TIMOTHY RICHARD G.">TIMOTHY RICHARD G.</option>
+                        <option value="VARENECA SUTIAN">VARENECA SUTIAN</option>
+                        <option value="NUR NADIRA ATIQAH MOHD SAFRI">NUR NADIRA ATIQAH MOHD SAFRI</option>
+                        <option value="NELCILLA NELZAH NUKILI">NELCILLA NELZAH NUKILI</option>
+                    </select>
+                </div>
+
+                <!-- Bahagian A -->
+                <div class="mb-6 bg-yellow-50 p-4 rounded border border-yellow-200">
+                    <h3 class="font-bold text-yellow-800 mb-3 border-b border-yellow-300 pb-1">A. MAKLUMAT PERJUMPAAN</h3>
+                    
+                    <label class="form-label">Aktiviti</label>
+                    <select class="form-select" onchange="updateCheck('aktiviti', this.value)">
+                        <option value="">- Pilih -</option>
+                        <option value="uni">Unit Beruniform</option>
+                        <option value="upkas">Kelab/Persatuan</option>
+                        <option value="sukan">Sukan/Permainan</option>
+                        <option value="himpunan">Perhimpunan Bulanan</option>
+                    </select>
+
+                    <label class="form-label">Kehadiran Murid</label>
+                    <select class="form-select" onchange="updateCheck('murid', this.value)">
+                        <option value="">- Pilih -</option>
+                        <option value="sangat_baik">Sangat Baik</option>
+                        <option value="baik">Baik</option>
+                        <option value="sederhana">Sederhana</option>
+                        <option value="lemah">Lemah</option>
+                    </select>
+
+                    <label class="form-label">Kehadiran Guru</label>
+                    <select class="form-select" onchange="updateCheck('guru', this.value)">
+                        <option value="">- Pilih -</option>
+                        <option value="lengkap">Lengkap</option>
+                        <option value="tidak_lengkap">Tidak Lengkap</option>
+                    </select>
+
+                    <label class="form-label">Pengurusan</label>
+                    <select class="form-select" onchange="updateCheck('urus', this.value)">
+                        <option value="">- Pilih -</option>
+                        <option value="teratur">Teratur</option>
+                        <option value="kurang">Kurang Teratur</option>
+                    </select>
+
+                    <label class="form-label">Disiplin Murid</label>
+                    <select class="form-select" onchange="updateCheck('disiplin', this.value)">
+                        <option value="">- Pilih -</option>
+                        <option value="baik">Baik</option>
+                        <option value="perlu">Perlu Penambahbaikan</option>
+                    </select>
+                </div>
+
+                <!-- Bahagian B -->
+                <div class="mb-6 bg-yellow-50 p-4 rounded border border-yellow-200">
+                    <h3 class="font-bold text-yellow-800 mb-3 border-b border-yellow-300 pb-1">B. PELAKSANAAN (YA/TIDAK)</h3>
+                    
+                    <div class="space-y-3 text-sm">
+                        <!-- Repeat for 6 items -->
+                        <div class="flex justify-between items-center bg-white p-2 rounded">
+                            <span>1. Murid berkumpul mengikut unit</span>
+                            <div>
+                                <label><input type="radio" name="b1" onchange="updateB(1, 'ya')"> Y</label>
+                                <label class="ml-2"><input type="radio" name="b1" onchange="updateB(1, 'tidak')"> T</label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-2 rounded">
+                            <span>2. Semua guru penasihat hadir</span>
+                            <div>
+                                <label><input type="radio" name="b2" onchange="updateB(2, 'ya')"> Y</label>
+                                <label class="ml-2"><input type="radio" name="b2" onchange="updateB(2, 'tidak')"> T</label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-2 rounded">
+                            <span>3. Bermula tepat waktu</span>
+                            <div>
+                                <label><input type="radio" name="b3" onchange="updateB(3, 'ya')"> Y</label>
+                                <label class="ml-2"><input type="radio" name="b3" onchange="updateB(3, 'tidak')"> T</label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-2 rounded">
+                            <span>4. Arahan jelas & tersusun</span>
+                            <div>
+                                <label><input type="radio" name="b4" onchange="updateB(4, 'ya')"> Y</label>
+                                <label class="ml-2"><input type="radio" name="b4" onchange="updateB(4, 'tidak')"> T</label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-2 rounded">
+                            <span>5. Murid mematuhi arahan</span>
+                            <div>
+                                <label><input type="radio" name="b5" onchange="updateB(5, 'ya')"> Y</label>
+                                <label class="ml-2"><input type="radio" name="b5" onchange="updateB(5, 'tidak')"> T</label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-2 rounded">
+                            <span>6. Penutup teratur</span>
+                            <div>
+                                <label><input type="radio" name="b6" onchange="updateB(6, 'ya')"> Y</label>
+                                <label class="ml-2"><input type="radio" name="b6" onchange="updateB(6, 'tidak')"> T</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gambar -->
+                <div class="mb-6 border-t pt-4">
+                    <h3 class="font-bold text-green-800 mb-2">GAMBAR PEMANTAUAN (3 Keping Sahaja)</h3>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <input type="file" accept="image/*" class="w-full text-xs mb-2" onchange="previewImage(this, 'img1')">
+                        <input type="file" accept="image/*" class="w-full text-xs mb-2" onchange="previewImage(this, 'img2')">
+                        <input type="file" accept="image/*" class="w-full text-xs mb-2" onchange="previewImage(this, 'img3')">
+                    </div>
+                </div>
+
+                <!-- Ulasan Text -->
+                <div class="mb-6 space-y-3">
+                    <label class="form-label">C. Isu / Kelemahan</label>
+                    <textarea class="form-input" rows="3" oninput="updateText('out_isu', this.value)"></textarea>
+
+                    <label class="form-label">D. Cadangan Penambahbaikan</label>
+                    <textarea class="form-input" rows="3" oninput="updateText('out_cadangan', this.value)"></textarea>
+
+                    <label class="form-label">E. Ulasan Keseluruhan</label>
+                    <select class="form-select" onchange="updateCheck('ulasan', this.value)">
+                        <option value="">- Pilih -</option>
+                        <option value="cemerlang">Cemerlang</option>
+                        <option value="baik">Baik</option>
+                        <option value="memuaskan">Memuaskan</option>
+                        <option value="tindakan">Perlu Tindakan Susulan</option>
+                    </select>
+                </div>
+
+                <!-- Tandatangan -->
+                <div class="mb-8 border-t pt-4">
+                    <h3 class="font-bold text-green-800 mb-2">TANDATANGAN PEMANTAU</h3>
+                    <div class="bg-white border border-gray-400 h-32 w-full mb-1">
+                        <canvas id="signature-pad" class="w-full h-full cursor-crosshair"></canvas>
+                    </div>
+                    <button onclick="clearSignature()" class="text-xs text-red-600 underline mb-3">Padam Tandatangan</button>
+
+                    <label class="form-label">Jawatan Pemantau</label>
+                    <select class="form-select" id="in_jawatan_pemantau" onchange="updateText('out_sign_jawatan', this.value)">
+                        <option value="">- Pilih Jawatan -</option>
+                        <option value="Pengetua">Pengetua</option>
+                        <option value="PK Pentadbiran">PK Pentadbiran</option>
+                        <option value="PK Kokum">PK Kokum</option>
+                        <option value="PK Petang">PK Petang</option>
+                        <option value="Penyelaras UNI">Penyelaras UNI</option>
+                        <option value="Penyelaras UPKAS">Penyelaras UPKAS</option>
+                        <option value="Penyelaras USP">Penyelaras USP</option>
+                        <option value="Penolong Penyelaras UNI">Penolong Penyelaras UNI</option>
+                        <option value="Penolong Penyelaras UPKAS">Penolong Penyelaras UPKAS</option>
+                        <option value="Penolong Penyelaras USP">Penolong Penyelaras USP</option>
+                    </select>
+
+                    <label class="form-label">Nama Pemantau</label>
+                    <input type="text" class="form-input" oninput="updateText('out_sign_nama', this.value.toUpperCase())">
+                    
+                    <label class="form-label">Tarikh Laporan</label>
+                    <input type="date" class="form-input" oninput="updateDateSign(this.value)">
+                </div>
+
+            </form>
+        </div>
+
+        <!-- RIGHT: PREVIEW -->
+        <div class="w-full md:w-2/3 bg-gray-600 p-8 overflow-auto flex justify-center relative">
+            <div id="print-area">
+                
+                <!-- ====== PAGE 1 ====== -->
+                <div class="a4-page">
+                    <div class="bg-base-layer"></div>
+                    <div class="pencil-overlay"></div>
+                    
+                    <div class="content-layer">
+                        
+                        <!-- Header -->
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-[90px] flex-shrink-0 flex items-center justify-center">
+                                <img src="https://i.postimg.cc/jjCBnTqd/edited-LOGO-SMSFX.png" class="w-full h-auto" crossorigin="anonymous">
+                            </div>
+                            <div class="flex-grow main-header-bg">
+                                <h1 class="text-xl font-black uppercase leading-tight mb-1">REKOD PEMANTAUAN</h1>
+                                <h2 class="text-lg font-bold uppercase leading-tight text-white">PERJUMPAAN/PERHIMPUNAN KOKURIKULUM</h2>
+                                <h3 class="text-md font-bold uppercase mt-1 text-white">SM.ST.FRANCIS XAVIER <span id="out_tahun">2026</span></h3>
+                            </div>
+                        </div>
+
+                        <!-- General Info Table -->
+                        <table class="report-table">
+                            <tr>
+                                <td class="td-label">Tarikh</td>
+                                <td id="out_tarikh"></td>
+                            </tr>
+                            <tr>
+                                <td class="td-label">Hari</td>
+                                <td id="out_hari"></td>
+                            </tr>
+                            <tr>
+                                <td class="td-label">Masa</td>
+                                <td id="out_masa"></td>
+                            </tr>
+                            <tr>
+                                <td class="td-label">Tempat</td>
+                                <td id="out_tempat"></td>
+                            </tr>
+                            <tr>
+                                <td class="td-label">Nama Unit<br><span class="text-[9px] font-normal italic">(Unit yang dipantau)</span></td>
+                                <td id="out_unit"></td>
+                            </tr>
+                            <tr>
+                                <td class="td-label">Nama KGP<br><span class="text-[9px] font-normal italic">(Guru Penasihat)</span></td>
+                                <td id="out_kgp"></td>
+                            </tr>
+                        </table>
+
+                        <!-- Section A -->
+                        <div class="section-header">A. MAKLUMAT PERJUMPAAN/PERHIMPUNAN</div>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-green" width="40%">PERKARA</th>
+                                    <th class="th-green">CATATAN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center bg-gray-50">Aktiviti</td>
+                                    <td>
+                                        <div id="chk_aktiviti_uni"><span class="chk-box"></span> Unit Beruniform (UNI)</div>
+                                        <div id="chk_aktiviti_upkas"><span class="chk-box"></span> Unit Kelab/Persatuan (UPKAS)</div>
+                                        <div id="chk_aktiviti_sukan"><span class="chk-box"></span> Unit Sukan/Permainan (UNI)</div>
+                                        <div id="chk_aktiviti_himpunan"><span class="chk-box"></span> Perhimpunan Bulanan Kokum</div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center bg-gray-50">Kehadiran Murid</td>
+                                    <td>
+                                        <div class="flex flex-wrap gap-2">
+                                            <span id="chk_murid_sangat_baik"><span class="chk-box"></span> Sangat Baik</span>
+                                            <span id="chk_murid_baik"><span class="chk-box"></span> Baik</span>
+                                            <span id="chk_murid_sederhana"><span class="chk-box"></span> Sederhana</span>
+                                            <span id="chk_murid_lemah"><span class="chk-box"></span> Lemah</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center bg-gray-50">Kehadiran Guru</td>
+                                    <td>
+                                        <span id="chk_guru_lengkap"><span class="chk-box"></span> Lengkap</span>
+                                        <span id="chk_guru_tidak_lengkap" class="ml-4"><span class="chk-box"></span> Tidak Lengkap</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center bg-gray-50">Pengurusan</td>
+                                    <td>
+                                        <span id="chk_urus_teratur"><span class="chk-box"></span> Teratur</span>
+                                        <span id="chk_urus_kurang" class="ml-4"><span class="chk-box"></span> Kurang Teratur</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center bg-gray-50">Disiplin Murid</td>
+                                    <td>
+                                        <span id="chk_disiplin_baik"><span class="chk-box"></span> Baik</span>
+                                        <span id="chk_disiplin_perlu" class="ml-4"><span class="chk-box"></span> Perlu Penambahbaikan</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Section B -->
+                        <div class="section-header">B. PELAKSANAAN PERJUMPAAN/PERHIMPUNAN</div>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-green" width="50%">ASPEK DIPANTAU</th>
+                                    <th class="th-green" width="10%">YA</th>
+                                    <th class="th-green" width="10%">TIDAK</th>
+                                    <th class="th-green">CATATAN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Murid berkumpul mengikut unit</td>
+                                    <td class="text-center" id="b1_ya"></td>
+                                    <td class="text-center" id="b1_tidak"></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Semua guru penasihat hadir</td>
+                                    <td class="text-center" id="b2_ya"></td>
+                                    <td class="text-center" id="b2_tidak"></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Perhimpunan/perjumpaan bermula tepat waktu</td>
+                                    <td class="text-center" id="b3_ya"></td>
+                                    <td class="text-center" id="b3_tidak"></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Arahan jelas & tersusun</td>
+                                    <td class="text-center" id="b4_ya"></td>
+                                    <td class="text-center" id="b4_tidak"></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Murid mematuhi arahan</td>
+                                    <td class="text-center" id="b5_ya"></td>
+                                    <td class="text-center" id="b5_tidak"></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Penutup perjumpaan/perhimpunan teratur</td>
+                                    <td class="text-center" id="b6_ya"></td>
+                                    <td class="text-center" id="b6_tidak"></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+                <!-- ====== PAGE 2 ====== -->
+                <div class="a4-page">
+                    <div class="bg-base-layer"></div>
+                    <div class="pencil-overlay"></div>
+                    
+                    <div class="content-layer">
+                        
+                        <!-- Gambar -->
+                        <div class="section-header mt-0">GAMBAR PEMANTAUAN</div>
+                        <div class="img-grid">
+                            <div class="img-box"><img id="out_img1" class="hidden"></div>
+                            <div class="img-box"><img id="out_img2" class="hidden"></div>
+                            <div class="img-box"><img id="out_img3" class="hidden"></div>
+                        </div>
+
+                        <!-- Section C -->
+                        <div class="section-header">C. ISU / KELEMAHAN</div>
+                        <div class="border border-black bg-white bg-opacity-80 p-2 min-h-[100px]" id="out_isu"></div>
+
+                        <!-- Section D -->
+                        <div class="section-header">D. CADANGAN PENAMBAHBAIKAN</div>
+                        <div class="border border-black bg-white bg-opacity-80 p-2 min-h-[100px]" id="out_cadangan"></div>
+
+                        <!-- Section E -->
+                        <div class="section-header">E. ULASAN KESELURUHAN PEMANTAU</div>
+                        <div class="bg-white bg-opacity-80 p-3 border border-black mb-6">
+                            <div id="chk_ulasan_cemerlang"><span class="chk-box"></span> Cemerlang</div>
+                            <div id="chk_ulasan_baik"><span class="chk-box"></span> Baik</div>
+                            <div id="chk_ulasan_memuaskan"><span class="chk-box"></span> Memuaskan</div>
+                            <div id="chk_ulasan_tindakan"><span class="chk-box"></span> Perlu tindakan susulan</div>
+                        </div>
+
+                        <!-- Tandatangan -->
+                        <div class="mt-8">
+                            <p class="font-bold mb-2">Tandatangan Pemantau :</p>
+                            
+                            <div class="h-28 w-56 border-b border-dotted border-black relative mb-2">
+                                <img id="out_signature_img" class="h-full w-full object-contain absolute bottom-0 left-0 hidden">
+                            </div>
+                            
+                            <table style="border:none; width:auto; font-weight:bold;">
+                                <tr>
+                                    <td style="border:none; padding:2px; width:80px;">Nama</td>
+                                    <td style="border:none; padding:2px;">: <span id="out_sign_nama"></span></td>
+                                </tr>
+                                <tr>
+                                    <td style="border:none; padding:2px;">Jawatan</td>
+                                    <td style="border:none; padding:2px;">: <span id="out_sign_jawatan"></span></td>
+                                </tr>
+                                <tr>
+                                    <td style="border:none; padding:2px;">Tarikh</td>
+                                    <td style="border:none; padding:2px;">: <span id="out_sign_tarikh"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Signature Pad ---
+        const canvas = document.getElementById('signature-pad');
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+        }
+        window.onresize = resizeCanvas;
+        resizeCanvas();
+        const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgba(255, 255, 255, 0)' }); // Transparent
+
+        signaturePad.addEventListener("endStroke", () => {
+            const img = document.getElementById('out_signature_img');
+            img.src = signaturePad.toDataURL();
+            img.classList.remove('hidden');
+        });
+
+        function clearSignature() {
+            signaturePad.clear();
+            document.getElementById('out_signature_img').classList.add('hidden');
+        }
+
+        // --- Data Updates ---
+        function updateText(id, val) {
+            document.getElementById(id).innerText = val;
+        }
+
+        function updateDate(val) {
+            if(!val) return;
+            const date = new Date(val);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            // Format Hari di bahagian lain
+            const dayName = date.toLocaleDateString('ms-MY', { weekday: 'long' });
+            document.getElementById('out_hari').innerText = dayName;
+            
+            // Format Tarikh Penuh
+            const dateStr = date.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            document.getElementById('out_tarikh').innerText = dateStr;
+        }
+
+        function updateDateSign(val) {
+            if(!val) return;
+            const date = new Date(val);
+            const dateStr = date.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            document.getElementById('out_sign_tarikh').innerText = dateStr;
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return "";
+            const [hourString, minute] = timeString.split(":");
+            const hour = +hourString;
+            return (hour % 12 || 12) + ":" + minute + (hour < 12 ? " AM" : " PM");
+        }
+
+        function updateTime() {
+            const start = document.getElementById('in_masa_mula').value;
+            const end = document.getElementById('in_masa_tamat').value;
+            let res = "-";
+            if(start && end) res = `${formatTime(start)} - ${formatTime(end)}`;
+            else if (start) res = formatTime(start);
+            
+            document.getElementById('out_masa').innerText = res;
+        }
+
+        // --- Checkbox Logic ---
+        function updateCheck(group, value) {
+            const groups = {
+                'aktiviti': ['uni','upkas','sukan','himpunan'],
+                'murid': ['sangat_baik','baik','sederhana','lemah'],
+                'guru': ['lengkap','tidak_lengkap'],
+                'urus': ['teratur','kurang'],
+                'disiplin': ['baik','perlu'],
+                'ulasan': ['cemerlang','baik','memuaskan','tindakan']
+            };
+
+            groups[group].forEach(item => {
+                const el = document.querySelector(`#chk_${group}_${item} .chk-box`);
+                if(el) el.innerText = "";
+            });
+
+            if(value) {
+                const target = document.querySelector(`#chk_${group}_${value} .chk-box`);
+                if(target) target.innerText = "X";
+            }
+        }
+
+        function updateB(row, choice) {
+            document.getElementById(`b${row}_ya`).innerText = '';
+            document.getElementById(`b${row}_tidak`).innerText = '';
+            document.getElementById(`b${row}_${choice}`).innerText = 'X';
+        }
+
+        function previewImage(input, imgId) {
+            const file = input.files[0];
+            const imgEl = document.getElementById('out_' + imgId);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgEl.src = e.target.result;
+                    imgEl.classList.remove('hidden');
+                    imgEl.parentElement.style.background = "#fff";
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- PDF Gen ---
+        function generatePDF() {
+            const element = document.getElementById('print-area');
+            const btn = document.getElementById('btnGenerate');
+            const originalText = btn.innerHTML;
+
+            btn.innerHTML = 'MENJANA...';
+            btn.disabled = true;
+
+            const opt = {
+                margin: 0,
+                filename: 'Rekod_Pemantauan_SMSFX.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error(err);
+                alert("Ralat PDF");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
